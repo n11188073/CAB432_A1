@@ -8,13 +8,20 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm install
 
 # Copy the rest of the source code
 COPY . .
 
+# Ensure data directories exist and have correct permissions
+RUN mkdir -p data/uploads data/processed && \
+    chmod -R 777 data
+
 # Expose the port
 EXPOSE 5000
+
+# Set environment variable for production
+ENV NODE_ENV=production
 
 # Start the server with the correct file
 CMD ["node", "index.js"]

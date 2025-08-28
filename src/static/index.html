@@ -4,50 +4,132 @@
   <meta charset="UTF-8">
   <title>Image Processing App</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    main {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #4a90e2;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #4a90e2;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #357ABD;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #eef2f5;
+      margin-bottom: 5px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #login-status, #signup-status {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h1>Image Processing App</h1>
+  <header>Image Processing App</header>
 
-  <section id="description">
-    <h2>About This Page</h2>
-    <ul>
-      <li>Upload your images and store them securely on the server.</li>
-      <li>Apply filters like <strong>thumbnail</strong>, <strong>invert</strong>, and <strong>sepia</strong>.</li>
-      <li>View a list of your uploaded and processed images.</li>
-      <li>Download processed images directly to your computer.</li>
-      <li>Uses JWT authentication for secure login sessions.</li>
-    </ul>
-  </section>
+  <main>
+    <section id="description">
+      <h2>About This Page</h2>
+      <ul>
+        <li>Upload your images and store them securely on the server.</li>
+        <li>Apply filters like <strong>thumbnail</strong>, <strong>invert</strong>, and <strong>sepia</strong>.</li>
+        <li>View a list of your uploaded and processed images.</li>
+        <li>Download processed images directly to your computer.</li>
+        <li>Uses JWT authentication for secure login sessions.</li>
+      </ul>
+    </section>
 
-  <section id="login-section">
-    <h2>Login</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button id="login-btn">Login</button>
-    <p id="login-status"></p>
-  </section>
+    <section id="login-section">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username">
+      <input type="password" id="login-password" placeholder="Password">
+      <button id="login-btn">Login</button>
+      <p id="login-status"></p>
+    </section>
 
-  <section id="upload-section" style="display:none;">
-    <h2>Upload Image</h2>
-    <input type="file" id="image-file">
-    <button id="upload-btn">Upload</button>
-  </section>
+    <section id="signup-section">
+      <h2>Sign Up</h2>
+      <input type="text" id="signup-username" placeholder="Username">
+      <input type="password" id="signup-password" placeholder="Password">
+      <button id="signup-btn">Sign Up</button>
+      <p id="signup-status"></p>
+    </section>
 
-  <section id="process-section" style="display:none;">
-    <h2>Process Image</h2>
-    <select id="filter-select">
-      <option value="thumbnail">Thumbnail</option>
-      <option value="invert">Invert</option>
-      <option value="sepia">Sepia</option>
-    </select>
-    <input type="text" id="filename" placeholder="Enter uploaded filename">
-    <button id="process-btn">Process</button>
-  </section>
+    <section id="upload-section" style="display:none;">
+      <h2>Upload Image</h2>
+      <input type="file" id="image-file">
+      <button id="upload-btn">Upload</button>
+    </section>
 
-  <section id="images-section" style="display:none;">
-    <h2>My Images</h2>
-    <ul id="images-list"></ul>
-  </section>
+    <section id="process-section" style="display:none;">
+      <h2>Process Image</h2>
+      <select id="filter-select">
+        <option value="thumbnail">Thumbnail</option>
+        <option value="invert">Invert</option>
+        <option value="sepia">Sepia</option>
+      </select>
+      <input type="text" id="filename" placeholder="Enter uploaded filename">
+      <button id="process-btn">Process</button>
+    </section>
+
+    <section id="images-section" style="display:none;">
+      <h2>My Images</h2>
+      <ul id="images-list"></ul>
+    </section>
+  </main>
 
   <script src="script.js"></script>
 </body>

@@ -34,5 +34,18 @@ function authenticate(req, res, next) {
   });
 }
 
+router.post("/signup", (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: "Missing fields" });
+
+  if (users[username]) {
+    return res.status(400).json({ error: "User already exists" });
+  }
+
+  users[username] = password; // simple in-memory store
+  const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
+  res.json({ token });
+});
+
 module.exports = router;
 module.exports.authenticate = authenticate;

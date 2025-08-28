@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Processor App</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2rem; }
+  input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; max-width: 300px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Image Processor App</h1>
+<p>Upload images, apply filters, and download processed files.</p>
+
+<div id="loginDiv">
+  <h2>Sign In</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <label>
+    <input type="checkbox" id="rememberMe"> Remember Me
+  </label>
+  <button id="loginBtn">Login</button>
+  <p id="loginMsg" style="color:red;"></p>
+</div>
+
+<div id="appDiv" class="hidden">
+  <h2>Upload Image</h2>
+  <input type="file" id="imageInput">
+  <select id="filterSelect">
+    <option value="thumbnail">Thumbnail</option>
+    <option value="invert">Invert</option>
+    <option value="sepia">Sepia</option>
+  </select>
+  <button id="uploadBtn">Upload & Process</button>
+
+  <h2>Your Images</h2>
+  <ul id="imageList"></ul>
+  <button id="logoutBtn">Logout</button>
+</div>
+
+<script>
+const loginDiv = document.getElementById('loginDiv');
+const appDiv = document.getElementById('appDiv');
+const loginMsg = document.getElementById('loginMsg');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const rememberMeCheckbox = document.getElementById('rememberMe');
+
+let token = localStorage.getItem('token') || '';
+
+function showApp() {
+  loginDiv.classList.add('hidden');
+  appDiv.classList.remove('hidden');
+  loadImages();
+}
+
+function showLogin() {
+  loginDiv.classList.remove('hidden');
+  appDiv.classList.add('hidden');
+}
+
+if (token) showApp();
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const username = usernameInput.value;
+  const password = passwordInput.value;
+
+  try {
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      token = data.token;
+      if (rememberMeCheckbox.checked) localStorage.setItem('token', token);
+      showApp();
+    } else {
+      loginMsg.textContent = data.error || 'Login failed';
+    }
+  } catch (err) {
+    loginMsg.textContent = 'Login failed';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  token = '';
+  localStorage.removeItem('token');
+  showLogin();
+});
+
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('imageInput');
+  const filter = document.getElementById('filterSelect').value;
+  if (!fileInput.files[0]) return alert('Select an image');
+
+  const formData = new FormData();
+  formData.append('image', fileInput.files[0]);
+
+  try {
+    // Upload image
+    const uploadRes = await fetch('/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok) return alert(uploadData.error);
+
+    // Process image
+    const processRes = await fetch(`/process/${uploadData.filename}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ filter })
+    });
+    const processData = await processRes.json();
+    if (!processRes.ok) return alert(processData.error);
+
+    alert('Image processed: ' + processData.filename);
+    loadImages();
+  } catch (err) {
+    alert('Upload failed');
+  }
+});
+
+async function loadImages() {
+  const res = await fetch('/images', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  const data = await res.json();
+  const list = document.getElementById('imageList');
+  list.innerHTML = '';
+  data.forEach(img => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = '/images/' + img.filename;
+    a.textContent = img.filename;
+    a.target = '_blank';
+    li.appendChild(a);
+    list.appendChild(li);
+  });
+}
+</script>
+
+</body>
+</html>

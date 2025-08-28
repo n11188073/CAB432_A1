@@ -1,11 +1,26 @@
-let token = "";
+let token = null;
+
+// Signup
+document.getElementById("signup-btn").onclick = async () => {
+  const username = document.getElementById("signup-username").value;
+  const password = document.getElementById("signup-password").value;
+
+  const res = await fetch("/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+  document.getElementById("signup-status").innerText = data.message || data.error;
+};
 
 // Login
 document.getElementById("login-btn").onclick = async () => {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+  const username = document.getElementById("login-username").value;
+  const password = document.getElementById("login-password").value;
 
-  const res = await fetch("http://localhost:5000/auth/login", {
+  const res = await fetch("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
@@ -20,21 +35,21 @@ document.getElementById("login-btn").onclick = async () => {
     document.getElementById("images-section").style.display = "block";
     loadImages();
   } else {
-    document.getElementById("login-status").innerText = "Login failed!";
+    document.getElementById("login-status").innerText = data.error;
   }
 };
 
-// Upload image
+// Upload
 document.getElementById("upload-btn").onclick = async () => {
   const fileInput = document.getElementById("image-file");
-  if (!fileInput.files[0]) return alert("Select a file!");
+  if (!fileInput.files.length) return alert("Select a file!");
 
   const formData = new FormData();
   formData.append("image", fileInput.files[0]);
 
-  const res = await fetch("http://localhost:5000/upload", {
+  const res = await fetch("/upload", {
     method: "POST",
-    headers: { "Authorization": `Bearer ${token}` },
+    headers: { Authorization: "Bearer " + token },
     body: formData
   });
 
@@ -43,43 +58,51 @@ document.getElementById("upload-btn").onclick = async () => {
   loadImages();
 };
 
-// Process image
+// Process
 document.getElementById("process-btn").onclick = async () => {
   const filename = document.getElementById("filename").value;
   const filter = document.getElementById("filter-select").value;
-  if (!filename) return alert("Enter a filename!");
 
-  const res = await fetch(`http://localhost:5000/process/${filename}`, {
+  if (!filename) return alert("Enter filename!");
+
+  const res = await fetch("/process/" + filename, {
     method: "POST",
-    headers: { 
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
     },
     body: JSON.stringify({ filter })
   });
 
   const data = await res.json();
-  if (data.error) alert(data.error);
-  else alert("Processed: " + data.filename);
+  alert("Processed: " + data.filename);
   loadImages();
 };
 
-// List images
+// Load and display images
 async function loadImages() {
-  const res = await fetch("http://localhost:5000/images", {
-    headers: { "Authorization": `Bearer ${token}` }
-  });
-  const images = await res.json();
   const ul = document.getElementById("images-list");
   ul.innerHTML = "";
-  images.forEach(img => {
+
+  // Uploaded images
+  const uploadsRes = await fetch("/upload", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const uploads = await uploadsRes.json();
+  uploads.forEach(img => {
     const li = document.createElement("li");
-    const link = document.createElement("a");
-    link.href = `http://localhost:5000/images/${img.filename}`;
-    link.innerText = img.filename;
-    link.target = "_blank";
-    li.appendChild(link);
-    li.innerText += ` (filter: ${img.filter || "none"})`;
+    li.innerHTML = `<strong>Uploaded:</strong> ${img.filename} <br><img src="/uploads/${img.filename}" width="150">`;
+    ul.appendChild(li);
+  });
+
+  // Processed images
+  const processedRes = await fetch("/process", {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const processed = await processedRes.json();
+  processed.forEach(img => {
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>Processed:</strong> ${img.filename} <br><img src="/processed/${img.filename}" width="150">`;
     ul.appendChild(li);
   });
 }
