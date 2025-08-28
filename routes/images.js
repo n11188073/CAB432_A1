@@ -1,30 +1,33 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const { authenticate } = require("./auth");
-const uploadRoutes = require("./upload");
-const processRoutes = require("./process");
+const { processed } = require("./process");
+const { uploads } = require("./upload"); // Make sure upload.js exports `uploads`
 
 const router = express.Router();
 
-// List all images (uploaded + processed) for the logged-in user
+// GET /images → list all uploads + processed images for the authenticated user
 router.get("/", authenticate, (req, res) => {
-  const uploads = uploadRoutes.uploads || [];
-  const processed = processRoutes.processed || [];
-
-  // Only show images owned by the user
-  const mine = uploads.concat(processed).filter(img => img.owner === req.user);
-  res.json(mine);
+  const userImages = [...uploads, ...processed].filter(img => img.owner === req.user);
+  res.json(userImages);
 });
 
-// Download a processed file by filename
+// GET /images/:filename → download a processed image
 router.get("/:filename", authenticate, (req, res) => {
-  const filePath = path.join(__dirname, "../data/processed", req.params.filename);
+  const filename = path.basename(req.params.filename); // sanitize
+  const filePath = path.join(__dirname, "../data/processed", filename);
 
-  if (!require("fs").existsSync(filePath)) {
+  if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "File not found" });
   }
 
-  res.download(filePath);
+  res.download(filePath, filename, err => {
+    if (err) {
+      console.error("Download error:", err);
+      res.status(500).json({ error: "Failed to download file" });
+    }
+  });
 });
 
 module.exports = router;

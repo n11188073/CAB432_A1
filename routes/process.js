@@ -7,7 +7,7 @@ const { authenticate } = require("./auth");
 
 const router = express.Router();
 
-// Multer setup for form-data (no files, just filter field)
+// Multer setup for form-data (only text fields, no file upload)
 const upload = multer();
 
 // Ensure processed directory exists
@@ -20,28 +20,36 @@ let processed = [];
 // POST /process/:filename
 // Expects JSON body: { "filter": "thumbnail" }
 router.post("/:filename", authenticate, upload.none(), async (req, res) => {
+  // Sanitize filename (strip directories or URLs)
+  const rawFilename = req.params.filename;
+  const filename = path.basename(rawFilename);
+
   const { filter } = req.body;
 
   if (!filter) return res.status(400).json({ error: "No filter provided" });
 
-  const inputPath = path.join(__dirname, "../data/uploads", req.params.filename);
+  const inputPath = path.join(__dirname, "../data/uploads", filename);
   if (!fs.existsSync(inputPath)) return res.status(404).json({ error: "Image not found" });
 
-  const outputFile = `${Date.now()}-${filter}-${req.params.filename}`;
+  const outputFile = `${Date.now()}-${filter}-${filename}`;
   const outputPath = path.join(processedDir, outputFile);
 
   try {
     let image = sharp(inputPath);
 
     // Apply assignment-related filters
-    switch (filter) {
+    switch (filter.toLowerCase()) {
       case "thumbnail":
         image = image.resize({ width: 150 }); // width 150px, auto height
         break;
       case "invert":
         image = image.negate();
         break;
+      case "grayscale":
+        image = image.grayscale();
+        break;
       case "sepia":
+        // Approximate sepia using tint
         image = image.tint({ r: 112, g: 66, b: 20 });
         break;
       default:
