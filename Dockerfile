@@ -1,21 +1,20 @@
-# syntax=docker/dockerfile:1
-
-#From Week 2 prac - Containerise the app
+# Use official Node.js LTS Alpine image
 FROM node:22-alpine
+
+# Set working directory inside container
 WORKDIR /app
-COPY . .
-RUN yarn install --production
-CMD ["node", "src/index.js"]
-EXPOSE 3000
 
-#From Week 3 prac
-FROM node:20-alpine
-
-WORKDIR /usr/src/app
-
+# Copy package files first
 COPY package*.json ./
-RUN npm install
 
+# Install dependencies
+RUN npm install --production
+
+# Copy the rest of the source code
 COPY . .
 
-CMD ["node", "app.js"]
+# Expose the port
+EXPOSE 5000
+
+# Start the server with the correct file
+CMD ["node", "index.js"]
