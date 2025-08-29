@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 const { authenticate } = require("./auth");
+const { images } = require("../data");
 
 const router = express.Router();
 
@@ -40,6 +41,13 @@ router.post("/:filename", authenticate, async (req, res) => {
     }
 
     await image.toFile(outputPath);
+
+    // Add processed image to metadata
+    images.push({
+      filename: outputFile,
+      url: `/images/processed/${outputFile}`,
+      owner: req.user,
+    });
 
     res.json({
       message: "Processing successful",

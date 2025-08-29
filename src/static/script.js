@@ -1,4 +1,5 @@
 let token = null;
+let username = null; // Add this line
 
 // Helper: show popup messages
 function showPopup(msg, success) {
@@ -23,11 +24,22 @@ function showUserSections() {
   document.getElementById("images-section").style.display = "block";
   document.getElementById("login-section").style.display = "none";
   document.getElementById("signup-section").style.display = "none";
+  // Show username greeting
+  const greeting = document.getElementById("user-greeting");
+  greeting.textContent = `Welcome, ${username}!`;
+  greeting.style.display = "block";
 }
 
 // Load images from server
 async function loadImages() {
-  const res = await fetch("/images");
+  const res = await fetch("/images", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    // Optionally show an error or clear the gallery
+    document.getElementById("images-gallery").innerHTML = "";
+    return;
+  }
   const images = await res.json();
   const gallery = document.getElementById("images-gallery");
   gallery.innerHTML = "";
@@ -40,30 +52,28 @@ async function loadImages() {
     imgEl.style.height = "150px";
     imgEl.style.objectFit = "cover";
     imgEl.style.cursor = "pointer";
-
-    // Click to auto-fill processing
     imgEl.addEventListener("click", () => {
       document.getElementById("filename").value = img.filename;
     });
-
     gallery.appendChild(imgEl);
   });
 }
 
 // SIGNUP
 document.getElementById("signup-btn").addEventListener("click", async () => {
-  const username = document.getElementById("signup-username").value;
+  const uname = document.getElementById("signup-username").value;
   const password = document.getElementById("signup-password").value;
 
   try {
     const res = await fetch("/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: uname, password }),
     });
     const data = await res.json();
     if (res.ok) {
       token = data.token;
+      username = uname; // Save username
       showPopup("Sign up successful!", true);
       showUserSections();
       loadImages();
@@ -75,18 +85,19 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
 
 // LOGIN
 document.getElementById("login-btn").addEventListener("click", async () => {
-  const username = document.getElementById("login-username").value;
+  const uname = document.getElementById("login-username").value;
   const password = document.getElementById("login-password").value;
 
   try {
     const res = await fetch("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: uname, password }),
     });
     const data = await res.json();
     if (res.ok) {
       token = data.token;
+      username = uname; // Save username
       showPopup("Login successful!", true);
       showUserSections();
       loadImages();
