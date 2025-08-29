@@ -51,7 +51,7 @@ Core criteria
 - **Video timestamp:**
 - **Relevant files:**
     - **routes/upload.js**
-    - **roues/process.js**
+    - **routes/process.js**
 
 #### First kind
 
@@ -65,11 +65,11 @@ Core criteria
 #### Second kind
 
 - **One line description: Processed images**
-- **Type: Memory of JSON object**
-- **Rationale: Keeps the owner, filename, filtering to images, timestamps of images**
+- **Type: JSON object stored in memory**
+- **Rationale: Tracks owner, filename, applied filter, and timestamp of each processed image**
 - **Video timestamp:**
 - **Relevant files:**
-  - **routes/upload.js**
+  - **routes/process.js**
 
 ### CPU intensive task
 
@@ -83,14 +83,14 @@ Core criteria
  **One line description: Requesting multiple requests to /process/:filename to apply filters repeatedly**
 - **Video timestamp:** 
 - **Relevant files:**
-    - **Hoppscotch**
+    - **Hoppscotch (for demo) or loadtest.js (attempted)**
 
 Additional criteria
 ------------------------------------------------
 
 ### Extensive REST API features
 
-- **One line description:**
+- **One line description: Supports per-user image filtering and structured response with metadata**
 - **Video timestamp:**
 - **Relevant files:**
     - **routes/process.js**
