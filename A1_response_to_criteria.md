@@ -6,8 +6,8 @@ Overview
 
 - **Name: Bernardine Choi**
 - **Student number: n11188073**
-- **Application name: Image Processing**
-- **Two line description:** 
+- **Application name: Filter.Img**
+- **Two line description: Filter.Img is a Node.js REST API that lets users securely upload, process, and download images. It supports per-user authentication with JWT and offers basic filters like thumbnail, invert, and sepia.** 
 
 
 Core criteria
@@ -24,7 +24,7 @@ Core criteria
 
 ### Deploy the container
 
-- **EC2 instance ID: n11188073-A1**
+- **EC2 instance ID: i-05e1da2a7e06724b3 (n11188073-A1)**
 - **Video timestamp:**
 
 ### User login
@@ -90,10 +90,11 @@ Additional criteria
 
 ### Extensive REST API features
 
-- **One line description:** Not attempted
+- **One line description:**
 - **Video timestamp:**
 - **Relevant files:**
-    - 
+    - **routes/process.js**
+    - **routes/images.js**
 
 ### External API(s)
 
@@ -104,17 +105,18 @@ Additional criteria
 
 ### Additional types of data
 
-- **One line description:** Not attempted
+- **One line description: Stores both image files and structured metadata for each processed image.**
 - **Video timestamp:**
 - **Relevant files:**
-    - 
+    - **routes/process.js**
+    - **routes/images.js**
 
 ### Custom processing
 
-- **One line description:** Not attempted
+- **One line description: CPU-intensive image processing with multiple filters implemented using sharp.**
 - **Video timestamp:**
 - **Relevant files:**
-    - 
+    - **routes/process.js** 
 
 ### Infrastructure as code
 
