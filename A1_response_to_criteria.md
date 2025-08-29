@@ -77,12 +77,14 @@ Core criteria
 - **Video timestamp:** 
 - **Relevant files:**
     - **routes/process.js**
+    - **Hoppscotch (for demo)**
 
 ### CPU load testing
 
  **One line description: Requesting multiple requests to /process/:filename to apply filters repeatedly**
 - **Video timestamp:** 
 - **Relevant files:**
+    - **CPU utilization (%) in AWS instance details**
     - **Hoppscotch (for demo) or loadtest.js (attempted)**
 
 Additional criteria
