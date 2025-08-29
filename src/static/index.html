@@ -17,9 +17,8 @@
       min-height: 100vh;
     }
     main {
+      width: 90%;
       max-width: 900px;
-      width: 100%;
-      margin: 20px;
     }
     section {
       background: white;
@@ -51,9 +50,9 @@
     button:hover {
       background: #357ABD;
     }
-    #login-status, #signup-status {
-      color: red;
+    #login-status, #signup-status, #upload-status, #process-status {
       font-weight: bold;
+      margin: 5px 0;
     }
     #images-gallery {
       display: flex;
@@ -61,22 +60,20 @@
       gap: 10px;
     }
     #images-gallery img {
-      width: 150px;
+      max-width: 150px;
+      border-radius: 5px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
   <main>
-    <header><h1>Image Processing App</h1></header>
-
     <section id="description">
       <h2>About This Page</h2>
       <ul>
         <li>Upload your images and store them securely on the server.</li>
         <li>Apply filters like <strong>thumbnail</strong>, <strong>invert</strong>, and <strong>sepia</strong>.</li>
-        <li>View a gallery of your uploaded and processed images.</li>
-        <li>Click an image to process it without typing filenames.</li>
+        <li>View a list of your uploaded and processed images.</li>
         <li>Download processed images directly to your computer.</li>
         <li>Uses JWT authentication for secure login sessions.</li>
       </ul>
@@ -102,6 +99,7 @@
       <h2>Upload Image</h2>
       <input type="file" id="image-file" multiple>
       <button id="upload-btn">Upload</button>
+      <p id="upload-status"></p>
     </section>
 
     <section id="process-section" style="display:none;">
@@ -111,7 +109,9 @@
         <option value="invert">Invert</option>
         <option value="sepia">Sepia</option>
       </select>
-      <p>Click an image below to apply the selected filter.</p>
+      <input type="text" id="filename" placeholder="Click on an image to auto-fill">
+      <button id="process-btn">Process</button>
+      <p id="process-status"></p>
     </section>
 
     <section id="images-section" style="display:none;">

@@ -1,33 +1,56 @@
-let token = "";
+let token = null;
 
-// Popup function
-function showPopup(message, success = true) {
+// Helper: show popup messages
+function showPopup(msg, success) {
   const popup = document.createElement("div");
-  popup.textContent = message;
+  popup.textContent = msg;
   popup.style.position = "fixed";
   popup.style.top = "20px";
   popup.style.right = "20px";
   popup.style.padding = "10px 20px";
   popup.style.backgroundColor = success ? "green" : "red";
   popup.style.color = "white";
-  popup.style.fontWeight = "bold";
   popup.style.borderRadius = "5px";
-  popup.style.zIndex = 1000;
+  popup.style.zIndex = "1000";
   document.body.appendChild(popup);
-  setTimeout(() => document.body.removeChild(popup), 3000);
+  setTimeout(() => popup.remove(), 3000);
 }
 
-// Show user sections after login/signup
+// Show sections after login/signup
 function showUserSections() {
   document.getElementById("upload-section").style.display = "block";
   document.getElementById("process-section").style.display = "block";
   document.getElementById("images-section").style.display = "block";
   document.getElementById("login-section").style.display = "none";
   document.getElementById("signup-section").style.display = "none";
-  loadImages();
 }
 
-// Sign up
+// Load images from server
+async function loadImages() {
+  const res = await fetch("/images");
+  const images = await res.json();
+  const gallery = document.getElementById("images-gallery");
+  gallery.innerHTML = "";
+
+  images.forEach(img => {
+    const imgEl = document.createElement("img");
+    imgEl.src = img.url;
+    imgEl.alt = img.filename;
+    imgEl.style.width = "150px";
+    imgEl.style.height = "150px";
+    imgEl.style.objectFit = "cover";
+    imgEl.style.cursor = "pointer";
+
+    // Click to auto-fill processing
+    imgEl.addEventListener("click", () => {
+      document.getElementById("filename").value = img.filename;
+    });
+
+    gallery.appendChild(imgEl);
+  });
+}
+
+// SIGNUP
 document.getElementById("signup-btn").addEventListener("click", async () => {
   const username = document.getElementById("signup-username").value;
   const password = document.getElementById("signup-password").value;
@@ -43,15 +66,14 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
       token = data.token;
       showPopup("Sign up successful!", true);
       showUserSections();
-    } else {
-      showPopup(data.error || "Sign up failed.", false);
-    }
-  } catch (err) {
-    showPopup("Sign up failed.", false);
+      loadImages();
+    } else showPopup(data.error || "Sign up failed", false);
+  } catch {
+    showPopup("Sign up failed", false);
   }
 });
 
-// Login
+// LOGIN
 document.getElementById("login-btn").addEventListener("click", async () => {
   const username = document.getElementById("login-username").value;
   const password = document.getElementById("login-password").value;
@@ -67,23 +89,20 @@ document.getElementById("login-btn").addEventListener("click", async () => {
       token = data.token;
       showPopup("Login successful!", true);
       showUserSections();
-    } else {
-      showPopup(data.error || "Login failed.", false);
-    }
-  } catch (err) {
-    showPopup("Login failed.", false);
+      loadImages();
+    } else showPopup(data.error || "Login failed", false);
+  } catch {
+    showPopup("Login failed", false);
   }
 });
 
-// Upload images
+// UPLOAD
 document.getElementById("upload-btn").addEventListener("click", async () => {
-  const files = document.getElementById("image-file").files;
-  if (!files.length) return showPopup("Select at least one file.", false);
+  const fileInput = document.getElementById("image-file");
+  if (!fileInput.files.length) return showPopup("Select a file first!", false);
 
   const formData = new FormData();
-  for (let file of files) {
-    formData.append("images", file);
-  }
+  formData.append("image", fileInput.files[0]);
 
   try {
     const res = await fetch("/upload", {
@@ -92,52 +111,21 @@ document.getElementById("upload-btn").addEventListener("click", async () => {
       body: formData,
     });
     const data = await res.json();
-    if (res.ok) {
+    if (res.ok || res.status === 200) {
       showPopup("Upload successful!", true);
       loadImages();
-    } else {
-      showPopup(data.error || "Upload failed.", false);
-    }
-  } catch (err) {
-    showPopup("Upload failed.", false);
+    } else showPopup(data.error || "Upload failed", false);
+  } catch {
+    showPopup("Upload failed", false);
   }
 });
 
-// Load images gallery
-async function loadImages() {
-  try {
-    const res = await fetch("/images", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    const gallery = document.getElementById("images-gallery");
-    gallery.innerHTML = "";
-
-    data.forEach(img => {
-      const imgEl = document.createElement("img");
-      imgEl.src = `/images/uploads/${img.filename}`;
-      imgEl.title = img.filename;
-      imgEl.addEventListener("click", () => processImage(img.filename));
-      gallery.appendChild(imgEl);
-
-      // Also show processed images
-      if (img.processed) {
-        img.processed.forEach(pImg => {
-          const pEl = document.createElement("img");
-          pEl.src = `/images/processed/${pImg.filename}`;
-          pEl.title = pImg.filename;
-          gallery.appendChild(pEl);
-        });
-      }
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// Process image
-async function processImage(filename) {
+// PROCESS
+document.getElementById("process-btn").addEventListener("click", async () => {
+  const filename = document.getElementById("filename").value;
   const filter = document.getElementById("filter-select").value;
+  if (!filename) return showPopup("Select an image first!", false);
+
   try {
     const res = await fetch(`/process/${filename}`, {
       method: "POST",
@@ -149,12 +137,10 @@ async function processImage(filename) {
     });
     const data = await res.json();
     if (res.ok) {
-      showPopup(`Image processed (${filter})!`, true);
+      showPopup("Processing successful!", true);
       loadImages();
-    } else {
-      showPopup(data.error || "Processing failed.", false);
-    }
-  } catch (err) {
-    showPopup("Processing failed.", false);
+    } else showPopup(data.error || "Processing failed", false);
+  } catch {
+    showPopup("Processing failed", false);
   }
-}
+});
