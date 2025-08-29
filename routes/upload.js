@@ -6,29 +6,21 @@ const { authenticate } = require("./auth");
 
 const router = express.Router();
 
+// Ensure upload folder
 const uploadDir = path.join(__dirname, "../data/uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
+// Multer config for multiple files
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
 });
-
 const upload = multer({ storage });
 
-let uploads = [];
-
-// Upload endpoint
-router.post("/", authenticate, upload.single("image"), (req, res) => {
-  const record = {
-    id: uploads.length + 1,
-    owner: req.user,
-    filename: req.file.filename,
-    timestamp: new Date().toISOString(),
-  };
-  uploads.push(record);
-  res.json(record);
+router.post("/", authenticate, upload.array("images"), (req, res) => {
+  if (!req.files || req.files.length === 0) return res.status(400).json({ error: "No files uploaded" });
+  const uploaded = req.files.map(f => f.filename);
+  res.json({ uploaded });
 });
 
 module.exports = router;
-module.exports.uploads = uploads;

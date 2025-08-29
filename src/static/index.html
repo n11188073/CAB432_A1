@@ -5,76 +5,18 @@
   <title>Image Processing App</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f6f8;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #4a90e2;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 1.8rem;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    main {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 0 20px;
-    }
-    section {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-      color: #4a90e2;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-    }
-    button {
-      background: #4a90e2;
-      color: white;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background: #357ABD;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background: #eef2f5;
-      margin-bottom: 5px;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    #login-status, #signup-status {
-      color: red;
-      font-weight: bold;
-    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; color: #333; margin:0; padding:0; }
+    header { background:#4a90e2; color:white; padding:20px; text-align:center; font-size:1.8rem; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2);}
+    main { max-width:900px; margin:20px auto; padding:0 20px; }
+    section { background:white; padding:20px; border-radius:10px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+    h2 { margin-top:0; color:#4a90e2; }
+    input, select, button { width:100%; padding:10px; margin:10px 0; border-radius:5px; border:1px solid #ccc; font-size:1rem;}
+    button { background:#4a90e2; color:white; font-weight:bold; border:none; cursor:pointer; transition: background 0.3s ease;}
+    button:hover { background:#357ABD; }
+    #login-status, #signup-status, #upload-status, #process-status { color:red; font-weight:bold; }
+    #images-gallery img { width:150px; height:auto; cursor:pointer; border-radius:5px; border:1px solid #ccc; }
+    #images-gallery { display:flex; flex-wrap:wrap; gap:10px; }
+    .popup { position:fixed; top:20px; right:20px; background:#4a90e2; color:white; padding:15px; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.3); display:none; }
   </style>
 </head>
 <body>
@@ -109,9 +51,10 @@
     </section>
 
     <section id="upload-section" style="display:none;">
-      <h2>Upload Image</h2>
-      <input type="file" id="image-file">
+      <h2>Upload Images</h2>
+      <input type="file" id="image-file" multiple>
       <button id="upload-btn">Upload</button>
+      <p id="upload-status"></p>
     </section>
 
     <section id="process-section" style="display:none;">
@@ -121,15 +64,18 @@
         <option value="invert">Invert</option>
         <option value="sepia">Sepia</option>
       </select>
-      <input type="text" id="filename" placeholder="Enter uploaded filename">
+      <input type="text" id="filename" placeholder="Click an image to autofill" readonly>
       <button id="process-btn">Process</button>
+      <p id="process-status"></p>
     </section>
 
     <section id="images-section" style="display:none;">
       <h2>My Images</h2>
-      <ul id="images-list"></ul>
+      <div id="images-gallery"></div>
     </section>
   </main>
+
+  <div id="popup" class="popup"></div>
 
   <script src="script.js"></script>
 </body>

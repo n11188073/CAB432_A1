@@ -1,6 +1,6 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const path = require("path");
+const bodyParser = require("body-parser");
 
 const authRoutes = require("./routes/auth");
 const uploadRoutes = require("./routes/upload");
@@ -9,12 +9,15 @@ const imageRoutes = require("./routes/images");
 
 const app = express();
 
-// Serve static files from src/static
-app.use(express.static(path.join(__dirname, "src/static")));
+// JSON parsing
+app.use(bodyParser.json());
 
-// Parse JSON bodies
-app.use(bodyParser.json({ type: "application/json" }));
-app.use(bodyParser.urlencoded({ extended: true }));
+// Serve uploaded and processed images
+app.use("/images/uploads", express.static(path.join(__dirname, "data/uploads")));
+app.use("/images/processed", express.static(path.join(__dirname, "data/processed")));
+
+// Serve frontend
+app.use(express.static(path.join(__dirname, "src/static")));
 
 // Routes
 app.use("/auth", authRoutes);
@@ -22,13 +25,15 @@ app.use("/upload", uploadRoutes);
 app.use("/process", processRoutes);
 app.use("/images", imageRoutes);
 
-// Fallback route for SPA / index page
+// Serve index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "src/static/index.html"));
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Catch-all
+app.use((req, res) => {
+  res.status(404).send("Not Found");
 });
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

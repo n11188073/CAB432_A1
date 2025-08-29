@@ -1,51 +1,48 @@
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const router = express.Router();
-const SECRET = "secretkey";
 
-// Hardcoded users
-const users = {
-  alice: "password123",
-  bob: "securepass"
-};
+const users = []; // In-memory
 
-// Login
-router.post("/login", (req, res) => {
+const SECRET = "secretkey"; // Replace with env variable in production
+
+// Sign up
+router.post("/signup", async (req, res) => {
   const { username, password } = req.body;
-  if (users[username] && users[username] === password) {
-    const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: "Invalid credentials" });
+  if (users.find(u => u.username === username)) {
+    return res.status(400).json({ error: "Username exists" });
   }
-});
-
-// Middleware
-function authenticate(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader) return res.sendStatus(401);
-
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user.username;
-    next();
-  });
-}
-
-router.post("/signup", (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: "Missing fields" });
-
-  if (users[username]) {
-    return res.status(400).json({ error: "User already exists" });
-  }
-
-  users[username] = password; // simple in-memory store
+  const hashed = await bcrypt.hash(password, 10);
+  users.push({ username, password: hashed });
   const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
   res.json({ token });
 });
+
+// Login
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find(u => u.username === username);
+  if (!user) return res.status(400).json({ error: "Invalid username or password" });
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(400).json({ error: "Invalid username or password" });
+  const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
+  res.json({ token });
+});
+
+// Middleware
+const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "No token" });
+  const token = authHeader.split(" ")[1];
+  try {
+    req.user = jwt.verify(token, SECRET).username;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
 
 module.exports = router;
 module.exports.authenticate = authenticate;
