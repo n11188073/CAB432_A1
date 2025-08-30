@@ -7,7 +7,7 @@ Overview
 - **Name: Bernardine Choi**
 - **Student number: n11188073**
 - **Application name: Filter.Img**
-- **Two line description: Filter.Img is a Node.js REST API that lets users securely upload, process, and download images. It supports per-user authentication with JWT and offers basic filters like thumbnail, invert, and sepia.** 
+- **Two line description: Filter.Img is a Node.js REST API that lets users securely upload and process images. It supports per-user authentication with JWT and offers basic filters like thumbnail, invert, and sepia.** 
 
 
 Core criteria
