@@ -136,7 +136,7 @@ router.post("/confirm", async (req, res) => {
 });
 
 // Login
-router.post("/login", async (req, res) => {
+/*router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   try {
     const command = new InitiateAuthCommand({
@@ -147,8 +147,39 @@ router.post("/login", async (req, res) => {
     const response = await cognitoClient.send(command);
     res.json({ 
       message: "Login successful",
-      idToken: response.AuthenticationResult.IdToken
+      IdToken: response.AuthenticationResult.IdToken
     });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+*/
+
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const command = new InitiateAuthCommand({
+      AuthFlow: "USER_PASSWORD_AUTH",
+      ClientId: CLIENT_ID,
+      AuthParameters: { 
+        USERNAME: username, 
+        PASSWORD: password, 
+        SECRET_HASH: getSecretHash(username) 
+      }
+    });
+
+    const response = await cognitoClient.send(command);
+
+    if (!response.AuthenticationResult || !response.AuthenticationResult.IdToken) {
+      return res.status(400).json({ error: "Login failed: check username, password or confirmation" });
+    }
+
+    res.json({ 
+      message: "Login successful",
+      IdToken: response.AuthenticationResult.IdToken
+    });
+
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

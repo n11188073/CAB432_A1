@@ -17,7 +17,7 @@ app.use("/images/uploads", express.static(path.join(__dirname, "data/uploads")))
 app.use("/images/processed", express.static(path.join(__dirname, "data/processed")));
 
 // Serve frontend
-app.use(express.static(path.join(__dirname, "src/static")));
+app.use(express.static(path.join(__dirname, "static/src")));
 
 // Routes
 app.use("/auth", authRoutes);
@@ -27,7 +27,7 @@ app.use("/images", imageRoutes);
 
 // Serve index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "src/static/index.html"));
+  res.sendFile(path.join(__dirname, "static/src/index.html"));
 });
 
 // Catch-all

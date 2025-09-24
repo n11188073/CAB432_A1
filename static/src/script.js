@@ -163,7 +163,7 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
       body: JSON.stringify({ username, password, email })
     });
 
-    const data = await res.json(); // ✅ now res is defined
+    const data = await res.json(); //now res is defined
     const signupStatus = document.getElementById("signup-status");
 
     if (res.ok) {
@@ -236,7 +236,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 
   const data = await res.json();
   if (res.ok) {
-    token = data.idToken; // Save Cognito ID token
+    token = data.IdToken; // Save Cognito ID token
     document.getElementById("login-status").textContent = "Login successful!";
     document.getElementById("user-greeting").textContent = `Hello ${username}!`;
     document.getElementById("user-greeting").style.display = "block";
