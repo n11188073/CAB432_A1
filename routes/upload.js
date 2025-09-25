@@ -31,36 +31,38 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
     // Upload to S3
     await uploadToS3(localPath, s3Key);
 
-    // Metadata
+    // Metadata for local tracking
     const imgMeta = {
       filename: req.file.filename,
-      url: `/images/uploads/${req.file.filename}`, // local
+      url: `/images/uploads/${req.file.filename}`,
       s3Key,
-      owner: req.user,
+      owner: req.user || "unknown-user",
     };
     images.push(imgMeta);
 
     // Save metadata in DynamoDB
-    await putItem({
-      "qut-username": "n11188073@qut.edu.au", // partition key
-      name: req.file.filename,                // sort key
+    const dynamoItem = {
+      "username": req.user?.email || req.user || "unknown-user", // partition key
+      id: req.file.filename,                                        // sort key
+      owner: req.user || "unknown-user",
+      filter: null,
+      processedAt: null,
       s3Key,
-      owner: req.user,
+      s3Url: await getDownloadPresignedUrl(s3Key),
+      localUrl: `/images/uploads/${req.file.filename}`,
+      type: "uploaded",
+      createdAt: new Date().toISOString(),
       uploadedAt: new Date().toISOString(),
-    });
+    };
 
-    // Generate pre-signed URL
-    const presignedUrl = await getDownloadPresignedUrl(s3Key);
+    await putItem(dynamoItem);
 
     res.json({
       message: "Upload successful (local + S3 + DynamoDB)",
-      filename: req.file.filename,
-      localUrl: imgMeta.url,
-      s3Key,
-      presignedUrl,
+      item: dynamoItem,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Upload error:", err);
     res.status(500).json({ error: "Upload failed", details: err.message });
   }
 });

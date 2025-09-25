@@ -2,28 +2,35 @@
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
-// Create DynamoDB client
+// Create low-level DynamoDB client
 const client = new DynamoDBClient({ region: "ap-southeast-2" });
-const docClient = DynamoDBDocumentClient.from(client);
+
+// Create Document client for easier JS object handling
+const docClient = DynamoDBDocumentClient.from(client, {
+  marshallOptions: {
+    removeUndefinedValues: true, // avoids errors with undefined fields
+  },
+});
 
 // DynamoDB table name
 const tableName = "b_m_a2";
 
 /**
  * Save metadata into DynamoDB
- * @param {Object} item - The item to insert (must include partition key: qut-username)
+ * @param {Object} item - The item to insert (must include partition key: username and sort key: id)
  */
 async function putItem(item) {
   try {
-    if (!item["qut-username"] || !item.name) {
-      throw new Error("Item must include 'qut-username' and 'name'");
+    // Validate required keys
+    if (!item["username"] || !item.id) {
+      throw new Error("Item must include 'username' and 'id'");
     }
 
     const command = new PutCommand({
       TableName: tableName,
       Item: {
-        ...item,                          // Spread all provided fields
-        uploadedAt: new Date().toISOString(), // Always add upload timestamp
+        ...item,                          // Include all provided fields
+        uploadedAt: new Date().toISOString(), // Automatically add upload timestamp
       },
     });
 

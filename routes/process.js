@@ -1,3 +1,4 @@
+// routes/process.js
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -52,7 +53,7 @@ router.post("/:filename", authenticate, async (req, res) => {
     // Generate presigned URL
     const s3Url = await getDownloadPresignedUrl(s3Key);
 
-    // Metadata
+    // Add metadata to memory
     const imgMeta = {
       filename: outputFile,
       url: `/images/processed/${outputFile}`, // local path
@@ -62,23 +63,29 @@ router.post("/:filename", authenticate, async (req, res) => {
     };
     images.push(imgMeta);
 
-    // Save metadata in DynamoDB
+    // Save metadata in DynamoDB with unique name
     await putItem({
-      "qut-username": "n11188073@qut.edu.au", // partition key
-      name: outputFile,                       // sort key
+      "username": req.user,         // partition key
+      id: outputFile,                 // sort key: unique per image
       s3Key,
       s3Url,
       owner: req.user,
-      processedAt: new Date().toISOString(),
       filter,
+      localUrl: `/images/processed/${outputFile}`,
+      uploadedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      processedAt: new Date().toISOString(),
+      type: "processed",
     });
 
     res.json({
       message: "Processing successful (local + S3 + DynamoDB)",
       filename: outputFile,
-      url: imgMeta.url,
+      localUrl: imgMeta.url,
       s3Key,
       s3Url,
+      filter,
+      processedAt: new Date().toISOString(),
     });
   } catch (err) {
     console.error(err);
