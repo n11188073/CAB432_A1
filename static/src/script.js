@@ -1,5 +1,6 @@
 let token = null;
 let username = null;
+let session = null; //added for authentication code
 
 // Helper: show popup messages
 function showPopup(msg, success) {
@@ -149,13 +150,30 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 */
 //<madina
 
-// Signup
+// valid password
+function validatePassword(password) {
+  const errors = [];
+  if (password.length < 8) errors.push("at least 8 characters");
+  if (!/[A-Z]/.test(password)) errors.push("one uppercase letter");
+  if (!/[a-z]/.test(password)) errors.push("one lowercase letter");
+  if (!/[0-9]/.test(password)) errors.push("one number");
+  if (!/[^A-Za-z0-9]/.test(password)) errors.push("one special character");
+  return errors;
+}
+
 // Signup
 document.getElementById("signup-btn").addEventListener("click", async () => {
   const username = document.getElementById("signup-username").value;
   const password = document.getElementById("signup-password").value;
   const email = document.getElementById("signup-email").value;
 
+  // Client-side password validation
+  const pwErrors = validatePassword(password);
+  if (pwErrors.length > 0) {
+    document.getElementById("signup-status").textContent =
+      "Password must contain: " + pwErrors.join(", ");
+    return;
+  }
   try {
     const res = await fetch("/auth/signup", {
       method: "POST",
@@ -214,17 +232,15 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
       }
 
     } else {
-      signupStatus.textContent = data.error;
+      signupStatus.textContent = data.error || "Sign-up failed";
     }
 
   } catch (err) {
     document.getElementById("signup-status").textContent = "Sign-up failed: " + err.message;
   }
 });
-
-
 // Login
-document.getElementById("login-btn").addEventListener("click", async () => {
+/*document.getElementById("login-btn").addEventListener("click", async () => {
   const username = document.getElementById("login-username").value;
   const password = document.getElementById("login-password").value;
 
@@ -249,6 +265,90 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     document.getElementById("login-status").textContent = data.error;
   }
 });
+*/
+document.getElementById("login-btn").addEventListener("click", async () => {
+  //const username = document.getElementById("login-username").value;
+  username = document.getElementById("login-username").value;
+  const password = document.getElementById("login-password").value;
+
+  try {
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (data.challengeName) {
+      session = data.session;   // save session globally here
+      //username = uname;         // save username globally 
+      // show confirmation input dynamically
+      let confirmContainer = document.getElementById("login-confirm-container");
+      if (!confirmContainer) {
+        confirmContainer = document.createElement("div");
+        confirmContainer.id = "login-confirm-container";
+
+        const label = document.createElement("p");
+        label.textContent = "Enter the authentication code sent to your email:";
+
+        const codeInput = document.createElement("input");
+        codeInput.id = "login-authentication-code";
+        codeInput.placeholder = "Authentication code";
+
+        const confirmBtn = document.createElement("button");
+        confirmBtn.textContent = "Authentication Code";
+
+        confirmContainer.appendChild(label);
+        confirmContainer.appendChild(codeInput);
+        confirmContainer.appendChild(confirmBtn);
+        document.getElementById("login-section").appendChild(confirmContainer);
+
+        // Click event for confirmation
+        confirmBtn.addEventListener("click", async () => {
+          const code = document.getElementById("login-authentication-code").value;
+
+          const confirmRes = await fetch("/auth/confirm-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username,
+              confirmationCode: code,
+              session: session,
+              challengeName: data.challengeName //added this
+            })
+          });
+
+          const confirmData = await confirmRes.json();
+
+          if (confirmRes.ok) {
+            token = confirmData.IdToken;
+            username = username;
+            showPopup("Login successful!", true);
+            showUserSections();
+            loadImages();
+            confirmContainer.remove();
+          } else {
+            showPopup(confirmData.error || "Authentication failed", false);
+          }
+        });
+      }
+    } 
+      else if (data.IdToken) {
+      // Normal login without MFA
+      token = data.IdToken;
+      username = username;
+      showPopup("Login successful!", true);
+      showUserSections();
+      loadImages();
+    } else {
+      showPopup(data.error || "Login failed", false);
+    }
+  } catch (err) {
+    showPopup("Login failed: " + err.message, false);
+  }
+});
+
 //madina >
 // UPLOAD
 document.getElementById("upload-btn").addEventListener("click", async () => {

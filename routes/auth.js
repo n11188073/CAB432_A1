@@ -56,6 +56,7 @@ const {
   CognitoIdentityProviderClient,
   SignUpCommand,
   ConfirmSignUpCommand,
+  RespondToAuthChallengeCommand,
   InitiateAuthCommand
 } = require("@aws-sdk/client-cognito-identity-provider");
 const jwksClient = require("jwks-rsa");
@@ -135,27 +136,8 @@ router.post("/confirm", async (req, res) => {
   }
 });
 
-// Login
+// login
 /*router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const command = new InitiateAuthCommand({
-      AuthFlow: "USER_PASSWORD_AUTH",
-      ClientId: CLIENT_ID,
-      AuthParameters: { USERNAME: username, PASSWORD: password, SECRET_HASH: getSecretHash(username) }
-    });
-    const response = await cognitoClient.send(command);
-    res.json({ 
-      message: "Login successful",
-      IdToken: response.AuthenticationResult.IdToken
-    });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-*/
-
-router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   try {
@@ -178,6 +160,93 @@ router.post("/login", async (req, res) => {
     res.json({ 
       message: "Login successful",
       IdToken: response.AuthenticationResult.IdToken
+    });
+
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+*/
+
+// Login
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const command = new InitiateAuthCommand({
+      AuthFlow: "USER_PASSWORD_AUTH",
+      ClientId: CLIENT_ID,
+      AuthParameters: {
+        USERNAME: username,
+        PASSWORD: password,
+        SECRET_HASH: getSecretHash(username)
+      }
+    });
+
+    const response = await cognitoClient.send(command);
+
+    // If MFA or confirmation required
+    if (response.ChallengeName) {
+      return res.json({
+        challengeName: response.ChallengeName,
+        session: response.Session,  // needed for confirm-login
+        message: "Confirmation code required"
+      });
+    }
+
+    // Normal login
+    res.json({
+      IdToken: response.AuthenticationResult.IdToken,
+      message: "Login successful"
+    });
+
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+// confirmation
+router.post("/confirm-login", async (req, res) => {
+  const { username, confirmationCode, session } = req.body;
+
+  try {
+    /*const command = new RespondToAuthChallengeCommand({
+      ClientId: CLIENT_ID,
+      ChallengeName: "CUSTOM_CHALLENGE", // email
+      Session: session,
+      ChallengeResponses: {
+        USERNAME: username,
+        ANSWER: confirmationCode, // for email
+        SECRET_HASH: getSecretHash(username)
+      }
+    });*/
+    /*const command = new RespondToAuthChallengeCommand({
+  ClientId: CLIENT_ID,
+  ChallengeName: req.body.challengeName, // use what Cognito sent in /login
+  Session: session,
+  ChallengeResponses: {
+    USERNAME: username,
+    // Cognito expects 'SMS_MFA_CODE' or 'SOFTWARE_TOKEN_MFA_CODE'
+    [req.body.challengeName === "SMS_MFA" ? "SMS_MFA_CODE" : "ANSWER"]: confirmationCode,
+    SECRET_HASH: getSecretHash(username)
+  }
+});
+*/
+const command = new RespondToAuthChallengeCommand({
+      ClientId: CLIENT_ID,
+      ChallengeName: "EMAIL_OTP",   // force email OTP challenge
+      Session: session,
+      ChallengeResponses: {
+        USERNAME: username,
+        EMAIL_OTP_CODE: confirmationCode,  // required for email MFA
+        SECRET_HASH: getSecretHash(username)
+      }
+    });
+
+    const response = await cognitoClient.send(command);
+
+    res.json({
+      IdToken: response.AuthenticationResult.IdToken,
+      message: "Login successful"
     });
 
   } catch (err) {
