@@ -1,4 +1,3 @@
-// routes/upload.js
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -6,6 +5,7 @@ const fs = require("fs");
 const { authenticate } = require("./auth");
 const { images } = require("../data");
 const { uploadToS3, getDownloadPresignedUrl } = require("../utils/s3");
+const { putItem } = require("../utils/dynamodb");
 
 const router = express.Router();
 
@@ -31,20 +31,29 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
     // Upload to S3
     await uploadToS3(localPath, s3Key);
 
-    // Create metadata for this image
+    // Metadata
     const imgMeta = {
       filename: req.file.filename,
-      url: `/images/uploads/${req.file.filename}`, // local access
+      url: `/images/uploads/${req.file.filename}`, // local
       s3Key,
       owner: req.user,
     };
     images.push(imgMeta);
 
-    // Optional: generate pre-signed URL
+    // Save metadata in DynamoDB
+    await putItem({
+      "qut-username": "n11188073@qut.edu.au", // partition key
+      name: req.file.filename,                // sort key
+      s3Key,
+      owner: req.user,
+      uploadedAt: new Date().toISOString(),
+    });
+
+    // Generate pre-signed URL
     const presignedUrl = await getDownloadPresignedUrl(s3Key);
 
     res.json({
-      message: "Upload successful (local + S3)",
+      message: "Upload successful (local + S3 + DynamoDB)",
       filename: req.file.filename,
       localUrl: imgMeta.url,
       s3Key,
@@ -52,7 +61,7 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Upload to S3 failed", details: err.message });
+    res.status(500).json({ error: "Upload failed", details: err.message });
   }
 });
 

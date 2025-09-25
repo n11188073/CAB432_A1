@@ -5,7 +5,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const fs = require("fs");
 const path = require("path");
 
-const BUCKET = "n11188073-a2";
+const BUCKET = "b-m-a2";
 const s3 = new S3Client({ region: "ap-southeast-2" });
 
 // Upload a file to S3 using Upload (handles streams of unknown length)

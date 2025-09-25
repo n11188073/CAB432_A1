@@ -5,6 +5,7 @@ const sharp = require("sharp");
 const { authenticate } = require("./auth");
 const { images } = require("../data");
 const { uploadToS3, getDownloadPresignedUrl } = require("../utils/s3");
+const { putItem } = require("../utils/dynamodb");
 
 const router = express.Router();
 
@@ -48,10 +49,10 @@ router.post("/:filename", authenticate, async (req, res) => {
     const s3Key = `processed/${outputFile}`;
     await uploadToS3(outputPath, s3Key);
 
-    // Generate presigned URL for S3 download
+    // Generate presigned URL
     const s3Url = await getDownloadPresignedUrl(s3Key);
 
-    // Add metadata
+    // Metadata
     const imgMeta = {
       filename: outputFile,
       url: `/images/processed/${outputFile}`, // local path
@@ -61,8 +62,19 @@ router.post("/:filename", authenticate, async (req, res) => {
     };
     images.push(imgMeta);
 
+    // Save metadata in DynamoDB
+    await putItem({
+      "qut-username": "n11188073@qut.edu.au", // partition key
+      name: outputFile,                       // sort key
+      s3Key,
+      s3Url,
+      owner: req.user,
+      processedAt: new Date().toISOString(),
+      filter,
+    });
+
     res.json({
-      message: "Processing successful (local + S3)",
+      message: "Processing successful (local + S3 + DynamoDB)",
       filename: outputFile,
       url: imgMeta.url,
       s3Key,
