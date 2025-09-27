@@ -42,61 +42,71 @@ async function loadImages() {
 
     if (!res.ok) throw new Error("Failed to load images");
 
-    const images = await res.json();
+    const data = await res.json();
     const gallery = document.getElementById("images-gallery");
     gallery.innerHTML = "";
 
-    images.forEach(img => {
+    if (!data.images || data.images.length === 0) {
+      gallery.innerHTML = "<p>No images uploaded yet.</p>";
+      return;
+    }
+
+    data.images.forEach(img => {
+      const container = document.createElement("div");
+      container.className = "image-item";
+      container.style.display = "inline-block";
+      container.style.margin = "10px";
+      container.style.textAlign = "center";
+
+      // Image thumbnail (click to autofill filename)
       const imgEl = document.createElement("img");
-      imgEl.src = img.url;
-      imgEl.alt = img.filename;
+      imgEl.src = img.s3Url;
+      imgEl.alt = img.id;
       imgEl.style.width = "150px";
       imgEl.style.height = "150px";
       imgEl.style.objectFit = "cover";
       imgEl.style.cursor = "pointer";
-
-      // Click to auto-fill filename for processing
       imgEl.addEventListener("click", () => {
-        document.getElementById("filename").value = img.filename;
+        document.getElementById("filename").value = img.id;
       });
 
-      // Add download button
+      // Download button
       const downloadBtn = document.createElement("button");
       downloadBtn.textContent = "Download";
       downloadBtn.style.display = "block";
       downloadBtn.style.marginTop = "5px";
-
-      downloadBtn.addEventListener("click", async () => {
-        try {
-          const downloadRes = await fetch(img.url, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!downloadRes.ok) throw new Error("Download failed");
-
-          const blob = await downloadRes.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = img.filename;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          window.URL.revokeObjectURL(url);
-        } catch (err) {
-          showPopup(err.message, false);
-        }
+      downloadBtn.addEventListener("click", () => {
+        const a = document.createElement("a");
+        a.href = img.s3Url;   // Use presigned S3 URL
+        a.download = img.id;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       });
 
-      const container = document.createElement("div");
+      // Optional info below image
+      const info = document.createElement("p");
+      info.innerHTML = `
+        <strong>Filter:</strong> ${img.filter || "none"}<br>
+        <strong>Type:</strong> ${img.type || "uploaded"}<br>
+        <strong>Uploaded:</strong> ${img.uploadedAt || "N/A"}
+      `;
+      info.style.fontSize = "12px";
+
       container.appendChild(imgEl);
       container.appendChild(downloadBtn);
+      container.appendChild(info);
 
       gallery.appendChild(container);
     });
-  } catch {
-    document.getElementById("images-gallery").innerHTML = "";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("images-gallery").innerHTML = "<p>Failed to load images.</p>";
   }
 }
+
+
+
 
 // SIGNUP
 /*document.getElementById("signup-btn").addEventListener("click", async () => {

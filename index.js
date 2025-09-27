@@ -12,6 +12,9 @@ const app = express();
 // JSON parsing
 app.use(bodyParser.json());
 
+// Serve tmp folder for temporary images
+app.use("/tmp", express.static(path.join(__dirname, "tmp"))); // <-- Add this line
+
 // Serve uploaded and processed images
 app.use("/images/uploads", express.static(path.join(__dirname, "data/uploads")));
 app.use("/images/processed", express.static(path.join(__dirname, "data/processed")));

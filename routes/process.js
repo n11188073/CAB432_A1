@@ -4,18 +4,17 @@ const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 const { authenticate } = require("./auth");
-const { images } = require("../data");
 const { uploadToS3, getDownloadPresignedUrl } = require("../utils/s3");
 const { putItem } = require("../utils/dynamodb");
 
 const router = express.Router();
 
-// Ensure processed directory exists locally
+// Ensure tmp dir for processed files
 const processedDir = path.join(__dirname, "../data/processed");
 if (!fs.existsSync(processedDir)) fs.mkdirSync(processedDir, { recursive: true });
 
 // POST /process/:filename
-// JSON body: { "filter": "thumbnail|invert|sepia" }
+// Body: { filter: "thumbnail|invert|sepia" }
 router.post("/:filename", authenticate, async (req, res) => {
   const { filter } = req.body;
   const inputPath = path.join(__dirname, "../data/uploads", req.params.filename);
@@ -43,52 +42,38 @@ router.post("/:filename", authenticate, async (req, res) => {
         return res.status(400).json({ error: "Invalid filter option" });
     }
 
-    // Save processed image locally
+    // Save locally (tmp)
     await image.toFile(outputPath);
 
-    // Upload processed image to S3
+    // Upload processed file to S3
     const s3Key = `processed/${outputFile}`;
     await uploadToS3(outputPath, s3Key);
 
-    // Generate presigned URL
+    // Presigned URL
     const s3Url = await getDownloadPresignedUrl(s3Key);
 
-    // Add metadata to memory
-    const imgMeta = {
-      filename: outputFile,
-      url: `/images/processed/${outputFile}`, // local path
-      s3Key,
-      s3Url,
+    // Save metadata in DynamoDB
+    const item = {
+      username: req.user,
+      id: outputFile,
       owner: req.user,
-    };
-    images.push(imgMeta);
-
-    // Save metadata in DynamoDB with unique name
-    await putItem({
-      "username": req.user,         // partition key
-      id: outputFile,                 // sort key: unique per image
-      s3Key,
-      s3Url,
-      owner: req.user,
+      type: "processed",
       filter,
-      localUrl: `/images/processed/${outputFile}`,
-      uploadedAt: new Date().toISOString(),
+      s3Key,
+      s3Url,
+      localUrl: null,
       createdAt: new Date().toISOString(),
       processedAt: new Date().toISOString(),
-      type: "processed",
-    });
+    };
+
+    await putItem(item);
 
     res.json({
-      message: "Processing successful (local + S3 + DynamoDB)",
-      filename: outputFile,
-      localUrl: imgMeta.url,
-      s3Key,
-      s3Url,
-      filter,
-      processedAt: new Date().toISOString(),
+      message: "Processing successful (S3 + DynamoDB)",
+      item,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Processing error:", err);
     res.status(500).json({ error: "Processing failed", details: err.message });
   }
 });

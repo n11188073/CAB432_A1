@@ -1,19 +1,19 @@
+// routes/upload.js
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { authenticate } = require("./auth");
-const { images } = require("../data");
 const { uploadToS3, getDownloadPresignedUrl } = require("../utils/s3");
 const { putItem } = require("../utils/dynamodb");
 
 const router = express.Router();
 
-// Ensure upload directory exists locally
+// Ensure local tmp upload dir exists
 const uploadDir = path.join(__dirname, "../data/uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Multer setup
+// Multer setup (temporary local store)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
@@ -31,35 +31,29 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
     // Upload to S3
     await uploadToS3(localPath, s3Key);
 
-    // Metadata for local tracking
-    const imgMeta = {
-      filename: req.file.filename,
-      url: `/images/uploads/${req.file.filename}`,
-      s3Key,
-      owner: req.user || "unknown-user",
-    };
-    images.push(imgMeta);
+    // Get presigned URL
+    const s3Url = await getDownloadPresignedUrl(s3Key);
 
     // Save metadata in DynamoDB
-    const dynamoItem = {
-      "username": req.user?.email || req.user || "unknown-user", // partition key
-      id: req.file.filename,                                        // sort key
-      owner: req.user || "unknown-user",
-      filter: null,
-      processedAt: null,
-      s3Key,
-      s3Url: await getDownloadPresignedUrl(s3Key),
-      localUrl: `/images/uploads/${req.file.filename}`,
+    const item = {
+      username: req.user,        // partition key
+      id: req.file.filename,     // sort key
+      owner: req.user,
       type: "uploaded",
+      filter: null,
+      s3Key,
+      s3Url,
+      localUrl: null,            // no need to rely on local
+      processedAt: null,
       createdAt: new Date().toISOString(),
       uploadedAt: new Date().toISOString(),
     };
 
-    await putItem(dynamoItem);
+    await putItem(item);
 
     res.json({
-      message: "Upload successful (local + S3 + DynamoDB)",
-      item: dynamoItem,
+      message: "Upload successful (S3 + DynamoDB)",
+      item,
     });
   } catch (err) {
     console.error("Upload error:", err);
