@@ -17,33 +17,52 @@ Overview
 - **Student number: n11188073** 
 - **Partner name (if applicable): Madina Rezai**
 - **Student number: n11381256**
-- **Application name:** FooBarBaz
-- **Two line description:** I/We implemented this very cool app that does Foo, Bar and Baz.
-- **EC2 instance name or ID:**
+
+- **Application name: Filter.Img (Image Processing App)** 
+
+- **Two line description:Two line description: Filter.Img is a Node.js REST API that lets users securely upload, process and download images. It supports per-user authentication with JWT and offers basic filters like thumbnail, invert, and sepia.** 
+
+- **EC2 instance name or ID: img_A2 (instance name = i-05e1da2a7e06724b3)**
 
 ------------------------------------------------
 
 ### Core - First data persistence service
 
-- **AWS service name:**  [eg. S3]
-- **What data is being stored?:** [eg video files]
-- **Why is this service suited to this data?:** [eg. large files are best suited to blob storage due to size restrictions on other services]
-- **Why is are the other services used not suitable for this data?:**
-- **Bucket/instance/table name:**
+- **AWS service name: S3** 
+
+- **What data is being stored?: Image files (uploaded and processed images)** 
+- **Why is this service suited to this data?: S3 offers safe storage, is well-suited for holding huge binary data, and permits temporary access via pre-signed URLs without disclosing login credentials.** 
+
+- **Why is are the other services used not suitable for this data?: Large binary files cannot be stored in DynamoDB; doing so would be redundant and exceed size restrictions for pictures.**
+
+- **Bucket/instance/table name: b-m-a2**
+
 - **Video timestamp:**
+
 - **Relevant files:**
-    -
+**- utils/s3.js**
+**- routes/upload.js**
+**- routes/images.js**
+**- static/src/script.js**
 
 ### Core - Second data persistence service
 
-- **AWS service name:**  [eg. DynamoDB]
-- **What data is being stored?:** 
-- **Why is this service suited to this data?:**
-- **Why is are the other services used not suitable for this data?:**
-- **Bucket/instance/table name:**
+- **AWS service name: DynamoDB**
+
+- **What data is being stored?: Image metadata, e.g. username, image IDs, image type, filter application,S3 key, S3 URL and timestamps** 
+
+- **Why is this service suited to this data?: DynamoDB is suitable as it is a NoSQL database which is designed for quick access and key-based querying and is ideal for storing structured metadata.**
+
+- **Why is are the other services used not suitable for this data?: S3 does not effectively enable structured queries and is only for binary items.**
+
+- **Bucket/instance/table name: b_m_a2**
+
 - **Video timestamp:**
+
 - **Relevant files:**
-    -
+**- utils/dynamodb.js**
+**- routes/upload.js**
+**- routes/images.js**
 
 ### Third data service
 
@@ -58,10 +77,15 @@ Overview
 
 ### S3 Pre-signed URLs
 
-- **S3 Bucket names:**
+- **S3 Bucket names: b-m-a2**
+
 - **Video timestamp:**
+
 - **Relevant files:**
-    -
+**- routes/upload.js**
+**- routes/images.js**
+**- utils/s3.js**
+**- static/src/script.js**
 
 ### In-memory cache
 
@@ -74,11 +98,16 @@ Overview
 
 ### Core - Statelessness
 
-- **What data is stored within your application that is not stored in cloud data services?:** [eg. intermediate video files that have been transcoded but not stabilised]
-- **Why is this data not considered persistent state?:** [eg. intermediate files can be recreated from source if they are lost]
-- **How does your application ensure data consistency if the app suddenly stops?:** [eg. journal used to record data transactions before they are done.  A separate task scans the journal and corrects problems on startup and once every 5 minutes afterwards. ]
+- **What data is stored within your application that is not stored in cloud data services?: Temporary image files in data/uploads and data/processed before being uploaded to S3** 
+- **Why is this data not considered persistent state?: Image are permanently stored in S3; local copies are only temporary and can be recreated if lost** 
+- **How does your application ensure data consistency if the app suddenly stops?: Permanent image data and metadata are in S3 and DynamoDB, so losing local temporary images does not affect the app** 
 - **Relevant files:**
-    -
+  **- routes/upload.js**
+  **- routes/process.js** 
+  **- utils/s3.js**
+  **- utils/dynamodb.js**
+  **- script.js**
+    
 
 ### Graceful handling of persistent connections
 

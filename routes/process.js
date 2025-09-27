@@ -61,7 +61,6 @@ router.post("/:filename", authenticate, async (req, res) => {
       filter,
       s3Key,
       s3Url,
-      localUrl: null,
       createdAt: new Date().toISOString(),
       processedAt: new Date().toISOString(),
     };

@@ -43,7 +43,6 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
       filter: null,
       s3Key,
       s3Url,
-      localUrl: null,            // no need to rely on local
       processedAt: null,
       createdAt: new Date().toISOString(),
       uploadedAt: new Date().toISOString(),
