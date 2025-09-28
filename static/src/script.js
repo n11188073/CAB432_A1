@@ -1,6 +1,6 @@
 let token = null;
 let username = null;
-let session = null; //added for authentication code
+let session = null; // For MFA/login sessions
 
 // Helper: show popup messages
 function showPopup(msg, success) {
@@ -29,6 +29,17 @@ function showUserSections() {
   const greeting = document.getElementById("user-greeting");
   greeting.textContent = `Welcome, ${username}!`;
   greeting.style.display = "block";
+}
+
+// Validate password
+function validatePassword(password) {
+  const errors = [];
+  if (password.length < 8) errors.push("at least 8 characters");
+  if (!/[A-Z]/.test(password)) errors.push("one uppercase letter");
+  if (!/[a-z]/.test(password)) errors.push("one lowercase letter");
+  if (!/[0-9]/.test(password)) errors.push("one number");
+  if (!/[^A-Za-z0-9]/.test(password)) errors.push("one special character");
+  return errors;
 }
 
 // Load images from server
@@ -77,14 +88,14 @@ async function loadImages() {
       downloadBtn.style.marginTop = "5px";
       downloadBtn.addEventListener("click", () => {
         const a = document.createElement("a");
-        a.href = img.s3Url;   // Use presigned S3 URL
+        a.href = img.s3Url;
         a.download = img.id;
         document.body.appendChild(a);
         a.click();
         a.remove();
       });
 
-      // Optional info below image
+      // Info
       const info = document.createElement("p");
       info.innerHTML = `
         <strong>Filter:</strong> ${img.filter || "none"}<br>
@@ -105,85 +116,20 @@ async function loadImages() {
   }
 }
 
-
-
-
-// SIGNUP
-/*document.getElementById("signup-btn").addEventListener("click", async () => {
-  const uname = document.getElementById("signup-username").value;
-  const password = document.getElementById("signup-password").value;
-
-  try {
-    const res = await fetch("/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: uname, password })
-    });
-    const data = await res.json();
-
-    if (res.ok) {
-      token = data.token;
-      username = uname;
-      showPopup("Sign up successful!", true);
-      showUserSections();
-      loadImages();
-    } else showPopup(data.error || "Sign up failed", false);
-  } catch {
-    showPopup("Sign up failed", false);
-  }
-});
-
-// LOGIN
-document.getElementById("login-btn").addEventListener("click", async () => {
-  const uname = document.getElementById("login-username").value;
-  const password = document.getElementById("login-password").value;
-
-  try {
-    const res = await fetch("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: uname, password })
-    });
-    const data = await res.json();
-
-    if (res.ok) {
-      token = data.token;
-      username = uname;
-      showPopup("Login successful!", true);
-      showUserSections();
-      loadImages();
-    } else showPopup(data.error || "Login failed", false);
-  } catch {
-    showPopup("Login failed", false);
-  }
-});
-*/
-//<madina
-
-// valid password
-function validatePassword(password) {
-  const errors = [];
-  if (password.length < 8) errors.push("at least 8 characters");
-  if (!/[A-Z]/.test(password)) errors.push("one uppercase letter");
-  if (!/[a-z]/.test(password)) errors.push("one lowercase letter");
-  if (!/[0-9]/.test(password)) errors.push("one number");
-  if (!/[^A-Za-z0-9]/.test(password)) errors.push("one special character");
-  return errors;
-}
-
-// Signup
+// Sign-up
 document.getElementById("signup-btn").addEventListener("click", async () => {
-  const username = document.getElementById("signup-username").value;
+  username = document.getElementById("signup-username").value;
   const password = document.getElementById("signup-password").value;
   const email = document.getElementById("signup-email").value;
 
-  // Client-side password validation
+  // Validate password
   const pwErrors = validatePassword(password);
   if (pwErrors.length > 0) {
     document.getElementById("signup-status").textContent =
       "Password must contain: " + pwErrors.join(", ");
     return;
   }
+
   try {
     const res = await fetch("/auth/signup", {
       method: "POST",
@@ -191,13 +137,12 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
       body: JSON.stringify({ username, password, email })
     });
 
-    const data = await res.json(); //now res is defined
+    const data = await res.json();
     const signupStatus = document.getElementById("signup-status");
 
     if (res.ok) {
-      signupStatus.textContent = "Sign-up successful! Enter the confirmation code below.";
+      signupStatus.textContent = "Sign-up successful! Enter confirmation code below.";
 
-      // Dynamically show confirmation input & button
       let confirmContainer = document.getElementById("confirm-container");
       if (!confirmContainer) {
         confirmContainer = document.createElement("div");
@@ -219,7 +164,6 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
         confirmContainer.appendChild(confirmBtn);
         signupStatus.parentNode.appendChild(confirmContainer);
 
-        // Confirm button click
         confirmBtn.addEventListener("click", async () => {
           const code = document.getElementById("confirmation-code").value;
           try {
@@ -228,10 +172,11 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ username, confirmationCode: code })
             });
+
             const confirmData = await confirmRes.json();
             if (confirmRes.ok) {
               showPopup("User confirmed! You can now log in.", true);
-              confirmContainer.remove(); // hide after success
+              confirmContainer.remove();
             } else {
               showPopup(confirmData.error || "Confirmation failed", false);
             }
@@ -244,40 +189,13 @@ document.getElementById("signup-btn").addEventListener("click", async () => {
     } else {
       signupStatus.textContent = data.error || "Sign-up failed";
     }
-
   } catch (err) {
     document.getElementById("signup-status").textContent = "Sign-up failed: " + err.message;
   }
 });
+
 // Login
-/*document.getElementById("login-btn").addEventListener("click", async () => {
-  const username = document.getElementById("login-username").value;
-  const password = document.getElementById("login-password").value;
-
-  const res = await fetch("/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-
-  const data = await res.json();
-  if (res.ok) {
-    token = data.IdToken; // Save Cognito ID token
-    document.getElementById("login-status").textContent = "Login successful!";
-    document.getElementById("user-greeting").textContent = `Hello ${username}!`;
-    document.getElementById("user-greeting").style.display = "block";
-    document.getElementById("login-section").style.display = "none";
-    document.getElementById("signup-section").style.display = "none";
-    document.getElementById("upload-section").style.display = "block";
-    document.getElementById("process-section").style.display = "block";
-    document.getElementById("images-section").style.display = "block";
-  } else {
-    document.getElementById("login-status").textContent = data.error;
-  }
-});
-*/
 document.getElementById("login-btn").addEventListener("click", async () => {
-  //const username = document.getElementById("login-username").value;
   username = document.getElementById("login-username").value;
   const password = document.getElementById("login-password").value;
 
@@ -291,9 +209,8 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     const data = await res.json();
 
     if (data.challengeName) {
-      session = data.session;   // save session globally here
-      //username = uname;         // save username globally 
-      // show confirmation input dynamically
+      session = data.session;
+
       let confirmContainer = document.getElementById("login-confirm-container");
       if (!confirmContainer) {
         confirmContainer = document.createElement("div");
@@ -307,14 +224,13 @@ document.getElementById("login-btn").addEventListener("click", async () => {
         codeInput.placeholder = "Authentication code";
 
         const confirmBtn = document.createElement("button");
-        confirmBtn.textContent = "Authentication Code";
+        confirmBtn.textContent = "Confirm";
 
         confirmContainer.appendChild(label);
         confirmContainer.appendChild(codeInput);
         confirmContainer.appendChild(confirmBtn);
         document.getElementById("login-section").appendChild(confirmContainer);
 
-        // Click event for confirmation
         confirmBtn.addEventListener("click", async () => {
           const code = document.getElementById("login-authentication-code").value;
 
@@ -325,7 +241,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
               username,
               confirmationCode: code,
               session: session,
-              challengeName: data.challengeName //added this
+              challengeName: data.challengeName
             })
           });
 
@@ -333,7 +249,6 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 
           if (confirmRes.ok) {
             token = confirmData.IdToken;
-            username = username;
             showPopup("Login successful!", true);
             showUserSections();
             loadImages();
@@ -343,24 +258,22 @@ document.getElementById("login-btn").addEventListener("click", async () => {
           }
         });
       }
-    } 
-      else if (data.IdToken) {
-      // Normal login without MFA
+
+    } else if (data.IdToken) {
       token = data.IdToken;
-      username = username;
       showPopup("Login successful!", true);
       showUserSections();
       loadImages();
     } else {
       showPopup(data.error || "Login failed", false);
     }
+
   } catch (err) {
     showPopup("Login failed: " + err.message, false);
   }
 });
 
-//madina >
-// UPLOAD
+// Upload
 document.getElementById("upload-btn").addEventListener("click", async () => {
   const fileInput = document.getElementById("image-file");
   if (!fileInput.files.length) return showPopup("Select a file first!", false);
@@ -376,7 +289,7 @@ document.getElementById("upload-btn").addEventListener("click", async () => {
     });
 
     const data = await res.json();
-    if (res.ok || res.status === 200) {
+    if (res.ok) {
       showPopup("Upload successful!", true);
       loadImages();
     } else showPopup(data.error || "Upload failed", false);
@@ -385,7 +298,7 @@ document.getElementById("upload-btn").addEventListener("click", async () => {
   }
 });
 
-// PROCESS
+// Process
 document.getElementById("process-btn").addEventListener("click", async () => {
   const filename = document.getElementById("filename").value;
   const filter = document.getElementById("filter-select").value;

@@ -1,54 +1,3 @@
-/*const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-
-const router = express.Router();
-
-const users = []; // In-memory
-
-const SECRET = "secretkey"; // Replace with env variable in production
-
-// Sign up
-router.post("/signup", async (req, res) => {
-  const { username, password } = req.body;
-  if (users.find(u => u.username === username)) {
-    return res.status(400).json({ error: "Username exists" });
-  }
-  const hashed = await bcrypt.hash(password, 10);
-  users.push({ username, password: hashed });
-  const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
-  res.json({ token });
-});
-
-// Login
-router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username);
-  if (!user) return res.status(400).json({ error: "Invalid username or password" });
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(400).json({ error: "Invalid username or password" });
-  const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
-  res.json({ token });
-});
-
-// Middleware
-const authenticate = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "No token" });
-  const token = authHeader.split(" ")[1];
-  try {
-    req.user = jwt.verify(token, SECRET).username;
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-};
-
-module.exports = router;
-module.exports.authenticate = authenticate;
-*/
-
-
 const bcrypt = require("bcryptjs");
 const express = require("express");
 const jwt = require("jsonwebtoken");
@@ -57,7 +6,8 @@ const {
   SignUpCommand,
   ConfirmSignUpCommand,
   RespondToAuthChallengeCommand,
-  InitiateAuthCommand
+  InitiateAuthCommand,
+  AdminAddUserToGroupCommand // ADDED THIS FOR USER GROUPS
 } = require("@aws-sdk/client-cognito-identity-provider");
 const jwksClient = require("jwks-rsa");
 
@@ -89,11 +39,28 @@ const authenticate = (req, res, next) => {
   if (!authHeader) return res.status(401).json({ error: "No token" });
   const token = authHeader.split(" ")[1];
 
-  jwt.verify(token, getKey, {}, (err, decoded) => {
-    if (err) return res.status(401).json({ error: "Invalid token" });
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(
+      Buffer.from(base64, "base64").toString("utf-8")
+    );
+
     req.user = decoded["cognito:username"];
+    req.groups = decoded["cognito:groups"] || [];
     next();
-  });
+  } catch (err) {
+    console.error("Authenticate error:", err);
+    return res.status(401).json({ error: "Invalid token" });
+  }
+}; 
+
+// ======= Middleware to require admin =======
+const requireAdmin = (req, res, next) => {
+  if (!req.groups || !req.groups.includes("Admin")) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
 };
 
 // ======= Endpoints =======
@@ -136,38 +103,6 @@ router.post("/confirm", async (req, res) => {
   }
 });
 
-// login
-/*router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const command = new InitiateAuthCommand({
-      AuthFlow: "USER_PASSWORD_AUTH",
-      ClientId: CLIENT_ID,
-      AuthParameters: { 
-        USERNAME: username, 
-        PASSWORD: password, 
-        SECRET_HASH: getSecretHash(username) 
-      }
-    });
-
-    const response = await cognitoClient.send(command);
-
-    if (!response.AuthenticationResult || !response.AuthenticationResult.IdToken) {
-      return res.status(400).json({ error: "Login failed: check username, password or confirmation" });
-    }
-
-    res.json({ 
-      message: "Login successful",
-      IdToken: response.AuthenticationResult.IdToken
-    });
-
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-*/
-
 // Login
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -209,28 +144,6 @@ router.post("/confirm-login", async (req, res) => {
   const { username, confirmationCode, session } = req.body;
 
   try {
-    /*const command = new RespondToAuthChallengeCommand({
-      ClientId: CLIENT_ID,
-      ChallengeName: "CUSTOM_CHALLENGE", // email
-      Session: session,
-      ChallengeResponses: {
-        USERNAME: username,
-        ANSWER: confirmationCode, // for email
-        SECRET_HASH: getSecretHash(username)
-      }
-    });*/
-    /*const command = new RespondToAuthChallengeCommand({
-  ClientId: CLIENT_ID,
-  ChallengeName: req.body.challengeName, // use what Cognito sent in /login
-  Session: session,
-  ChallengeResponses: {
-    USERNAME: username,
-    // Cognito expects 'SMS_MFA_CODE' or 'SOFTWARE_TOKEN_MFA_CODE'
-    [req.body.challengeName === "SMS_MFA" ? "SMS_MFA_CODE" : "ANSWER"]: confirmationCode,
-    SECRET_HASH: getSecretHash(username)
-  }
-});
-*/
 const command = new RespondToAuthChallengeCommand({
       ClientId: CLIENT_ID,
       ChallengeName: "EMAIL_OTP",   // force email OTP challenge
@@ -262,8 +175,8 @@ router.get("/profile", authenticate, (req, res) => {
 const crypto = require("crypto");
 
 function getSecretHash(username) {
-  const clientId = CLIENT_ID;        // your Cognito App Client ID
-  const clientSecret = CLIENT_SECRET; // your Cognito App Client Secret
+  const clientId = CLIENT_ID;        // Cognito App Client ID
+  const clientSecret = CLIENT_SECRET; //  Cognito App Client Secret
   const hmac = crypto.createHmac("sha256", clientSecret);
   hmac.update(username + clientId);
   return hmac.digest("base64");
@@ -271,3 +184,4 @@ function getSecretHash(username) {
 
 module.exports = router;
 module.exports.authenticate = authenticate;
+module.exports.requireAdmin = requireAdmin;
