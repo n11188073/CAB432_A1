@@ -89,12 +89,13 @@ Overview
 
 ### In-memory cache
 
-- **ElastiCache instance name:**
-- **What data is being cached?:** [eg. Thumbnails from YouTube videos obatined from external API]
-- **Why is this data likely to be accessed frequently?:** [ eg. Thumbnails from popular YouTube videos are likely to be shown to multiple users ]
+- **ElastiCache instance name:filterimga2**
+- **What data is being cached?:Images retrieved for a specific user (e.g., user glen) from the database but also works on mutliple users the TTL for cache is 5 min after 5 min the cache expires** 
+- **Why is this data likely to be accessed frequently?:Because users may repeatedly request their own images or data, and in a real-world deployment, multiple users could be accessing the same frequently-requested data, making caching essential for performance and reduced database load.** 
 - **Video timestamp:**
 - **Relevant files:**
-    -
+  **- index.js**
+  **- utils/cache.js**
 
 ### Core - Statelessness
 
@@ -119,18 +120,22 @@ Overview
 
 ### Core - Authentication with Cognito
 
-- **User pool name:**
-- **How are authentication tokens handled by the client?:** [eg. Response to login request sets a cookie containing the token.]
+- **User pool name:b_m_a2**
+- **How are authentication tokens handled by the client?:When a user logs in via /login, Cognito issues an ID token (JWT). The client receives this token in the JSON response and includes it in the Authorization header (Bearer <token>) for future protected requests. Middleware on the server verifies the token before granting access.** 
 - **Video timestamp:**
 - **Relevant files:**
-    -
+    **- routes/auth.js**
+    **- routes/authMiddleware.js**
+    **- static/src/script.js**
 
 ### Cognito multi-factor authentication
 
-- **What factors are used for authentication:** [eg. password, SMS code]
+- **What factors are used for authentication: password (first factor: something they know) and email confrimation code for signUp and authentication code for login second factor (something they have) Email OTP (one-time password) is used. During login, if the user has MFA enabled, Cognito requires the user to provide a code sent to their email (EMAIL_OTP_CODE)** 
 - **Video timestamp:**
 - **Relevant files:**
-    -
+    **- routes/auth.js**
+    **- routes/authMiddleware.js**
+    **- static/src/script.js**
 
 ### Cognito federated identities
 
@@ -141,14 +146,16 @@ Overview
 
 ### Cognito groups
 
-- **How are groups used to set permissions?:** [eg. 'admin' users can delete and ban other users]
+- **Users added to the group "Admin" can delete images when they login the delete button appears on top of the images but for other users the button do not appear at all:**
 - **Video timestamp:**
 - **Relevant files:**
-    -
+  **- routes/auth.js**
+  **- routes/images.js**
+  **- static/src/script.js**
 
 ### Core - DNS with Route53
 
-- **Subdomain**:  [eg. myawesomeapp.cab432.com]
+- **Subdomain: record name: filterimg.cab432.com and value: ec2-13-211-108-24.ap-southeast-2.compute.amazonaws.com**
 - **Video timestamp:**
 
 ### Parameter store
@@ -164,10 +171,10 @@ Overview
 
 ### Secrets manager
 
-- **Secrets names:** [eg. n1234567-youtube-api-key]
+- **Secrets names: "group14A2"**
 - **Video timestamp:**
 - **Relevant files:**
-    -
+  **- secretmanagerA2/index.js**
 
 ### Infrastructure as code
 
