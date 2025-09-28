@@ -37,7 +37,7 @@ Overview
 
 - **Bucket/instance/table name: b-m-a2**
 
-- **Video timestamp:**
+- **Video timestamp: 0.34**
 
 - **Relevant files:**
 **- utils/s3.js**
@@ -57,7 +57,7 @@ Overview
 
 - **Bucket/instance/table name: b_m_a2**
 
-- **Video timestamp:**
+- **Video timestamp: 1:30**
 
 - **Relevant files:**
 **- utils/dynamodb.js**
@@ -79,7 +79,7 @@ Overview
 
 - **S3 Bucket names: b-m-a2**
 
-- **Video timestamp:**
+- **Video timestamp: 1:58**
 
 - **Relevant files:**
 **- routes/upload.js**
@@ -89,10 +89,10 @@ Overview
 
 ### In-memory cache
 
-- **ElastiCache instance name:filterimga2**
-- **What data is being cached?:Images retrieved for a specific user (e.g., user glen) from the database but also works on mutliple users the TTL for cache is 5 min after 5 min the cache expires** 
+- **ElastiCache instance name: filterimga2**
+- **What data is being cached?: Images retrieved for a specific user (e.g., user glen) from the database but also works on mutliple users the TTL for cache is 5 min after 5 min the cache expires** 
 - **Why is this data likely to be accessed frequently?:Because users may repeatedly request their own images or data, and in a real-world deployment, multiple users could be accessing the same frequently-requested data, making caching essential for performance and reduced database load.** 
-- **Video timestamp:**
+- **Video timestamp: 2:25**
 - **Relevant files:**
   **- index.js**
   **- utils/cache.js**
@@ -122,7 +122,7 @@ Overview
 
 - **User pool name:b_m_a2**
 - **How are authentication tokens handled by the client?:When a user logs in via /login, Cognito issues an ID token (JWT). The client receives this token in the JSON response and includes it in the Authorization header (Bearer <token>) for future protected requests. Middleware on the server verifies the token before granting access.** 
-- **Video timestamp:**
+- **Video timestamp: 4:30**
 - **Relevant files:**
     **- routes/auth.js**
     **- routes/authMiddleware.js**
@@ -147,7 +147,7 @@ Overview
 ### Cognito groups
 
 - **Users added to the group "Admin" can delete images when they login the delete button appears on top of the images but for other users the button do not appear at all:**
-- **Video timestamp:**
+- **Video timestamp: 5:42**
 - **Relevant files:**
   **- routes/auth.js**
   **- routes/images.js**
@@ -156,12 +156,12 @@ Overview
 ### Core - DNS with Route53
 
 - **Subdomain: record name: filterimg.cab432.com and value: ec2-13-211-108-24.ap-southeast-2.compute.amazonaws.com**
-- **Video timestamp:**
+- **Video timestamp: 7:06**
 
 ### Parameter store
 
 - **Parameter names: /bma2/s3_bucket and /bma2/dynamo_table** 
-- **Video timestamp:**
+- **Video timestamp: 7:44**
 - **Relevant files:**
   **- routes/upload.js**
   **- routes/process.js** 
