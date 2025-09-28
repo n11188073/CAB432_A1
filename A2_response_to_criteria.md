@@ -13,10 +13,10 @@ Instructions
 Overview
 ------------------------------------------------
 
-- **Name: Bernardine Choi** 
-- **Student number: n11188073** 
+- **Name:** **Bernardine Choi** 
+- **Student number:** **n11188073** 
 - **Partner name (if applicable): Madina Rezai**
-- **Student number: n11381256**
+- **Partner student number:** **n11381256**
 
 - **Application name: Filter.Img (Image Processing App)** 
 
