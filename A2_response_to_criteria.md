@@ -131,7 +131,7 @@ Overview
 ### Cognito multi-factor authentication
 
 - **What factors are used for authentication: password (first factor: something they know) and email confrimation code for signUp and authentication code for login second factor (something they have) Email OTP (one-time password) is used. During login, if the user has MFA enabled, Cognito requires the user to provide a code sent to their email (EMAIL_OTP_CODE)** 
-- **Video timestamp:**
+- **Video timestamp: 4:39**
 - **Relevant files:**
     **- routes/auth.js**
     **- routes/authMiddleware.js**
