@@ -5,24 +5,39 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, QueryCommand } = require("@aws-sdk/lib-dynamodb");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { getParameter } = require("../utils/parameters");
 
 const router = express.Router();
-
-// AWS setup
 const region = "ap-southeast-2";
-const tableName = "b_m_a2";
 
+// AWS clients
 const ddbClient = new DynamoDBClient({ region });
 const docClient = DynamoDBDocumentClient.from(ddbClient, {
   marshallOptions: { removeUndefinedValues: true },
 });
-
 const s3Client = new S3Client({ region });
-const bucketName = "b-m-a2";
+
+// Parameters (loaded once at startup)
+let tableName;
+let bucketName;
+
+(async () => {
+  try {
+    tableName = await getParameter("/bma2/dynamodb_table");
+    bucketName = await getParameter("/bma2/s3_bucket");
+    console.log("Loaded from Parameter Store:", { tableName, bucketName });
+  } catch (err) {
+    console.error("Failed to load parameters from SSM:", err);
+  }
+})();
 
 // GET /images - list user’s images
 router.get("/", authenticate, async (req, res) => {
   try {
+    if (!tableName || !bucketName) {
+      return res.status(500).json({ error: "App configuration not loaded yet" });
+    }
+
     const command = new QueryCommand({
       TableName: tableName,
       KeyConditionExpression: "#u = :user",
@@ -40,7 +55,7 @@ router.get("/", authenticate, async (req, res) => {
           try {
             const getCmd = new GetObjectCommand({
               Bucket: bucketName,
-              Key: item.s3Key, // store *object key*, not old presigned URL
+              Key: item.s3Key,
             });
             presignedUrl = await getSignedUrl(s3Client, getCmd, { expiresIn: 300 }); // 5 mins
           } catch (err) {
@@ -50,7 +65,7 @@ router.get("/", authenticate, async (req, res) => {
 
         return {
           id: item.id,
-          type: item.type, // uploaded | processed
+          type: item.type,
           filter: item.filter,
           uploadedAt: item.uploadedAt,
           processedAt: item.processedAt,

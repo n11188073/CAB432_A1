@@ -1,4 +1,3 @@
-// routes/process.js
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -6,15 +5,22 @@ const sharp = require("sharp");
 const { authenticate } = require("./auth");
 const { uploadToS3, getDownloadPresignedUrl } = require("../utils/s3");
 const { putItem } = require("../utils/dynamodb");
+const { getParameter } = require("../utils/parameters");
 
 const router = express.Router();
 
-// Ensure tmp dir for processed files
+// Ensure tmp processed dir exists
 const processedDir = path.join(__dirname, "../data/processed");
 if (!fs.existsSync(processedDir)) fs.mkdirSync(processedDir, { recursive: true });
 
+// Cached parameters
+let bucketName, tableName;
+(async () => {
+  bucketName = await getParameter("/bma2/s3_bucket");
+  tableName = await getParameter("/bma2/dynamodb_table");
+})();
+
 // POST /process/:filename
-// Body: { filter: "thumbnail|invert|sepia" }
 router.post("/:filename", authenticate, async (req, res) => {
   const { filter } = req.body;
   const inputPath = path.join(__dirname, "../data/uploads", req.params.filename);
@@ -42,17 +48,12 @@ router.post("/:filename", authenticate, async (req, res) => {
         return res.status(400).json({ error: "Invalid filter option" });
     }
 
-    // Save locally (tmp)
     await image.toFile(outputPath);
 
-    // Upload processed file to S3
     const s3Key = `processed/${outputFile}`;
-    await uploadToS3(outputPath, s3Key);
+    await uploadToS3(outputPath, s3Key, bucketName);
+    const s3Url = await getDownloadPresignedUrl(s3Key, bucketName);
 
-    // Presigned URL
-    const s3Url = await getDownloadPresignedUrl(s3Key);
-
-    // Save metadata in DynamoDB
     const item = {
       username: req.user,
       id: outputFile,
@@ -61,16 +62,14 @@ router.post("/:filename", authenticate, async (req, res) => {
       filter,
       s3Key,
       s3Url,
+      localUrl: null,
       createdAt: new Date().toISOString(),
       processedAt: new Date().toISOString(),
     };
 
-    await putItem(item);
+    await putItem(item, tableName);
 
-    res.json({
-      message: "Processing successful (S3 + DynamoDB)",
-      item,
-    });
+    res.json({ message: "Processing successful", item });
   } catch (err) {
     console.error("Processing error:", err);
     res.status(500).json({ error: "Processing failed", details: err.message });

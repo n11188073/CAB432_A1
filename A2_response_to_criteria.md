@@ -153,10 +153,14 @@ Overview
 
 ### Parameter store
 
-- **Parameter names:** [eg. n1234567/base_url]
+- **Parameter names: /bma2/s3_bucket and /bma2/dynamo_table** 
 - **Video timestamp:**
 - **Relevant files:**
-    -
+  **- routes/upload.js**
+  **- routes/process.js** 
+  **- routes/images.js** 
+  **- utils/parameters.js.js**
+  **- .env**
 
 ### Secrets manager
 

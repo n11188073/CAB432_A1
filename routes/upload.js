@@ -1,4 +1,3 @@
-// routes/upload.js
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -6,19 +5,27 @@ const fs = require("fs");
 const { authenticate } = require("./auth");
 const { uploadToS3, getDownloadPresignedUrl } = require("../utils/s3");
 const { putItem } = require("../utils/dynamodb");
+const { getParameter } = require("../utils/parameters");
 
 const router = express.Router();
 
-// Ensure local tmp upload dir exists
+// Ensure tmp upload dir exists
 const uploadDir = path.join(__dirname, "../data/uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Multer setup (temporary local store)
+// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
+
+// Cache Parameter Store values
+let bucketName, tableName;
+(async () => {
+  bucketName = await getParameter("/bma2/s3_bucket");
+  tableName = await getParameter("/bma2/dynamodb_table");
+})();
 
 // POST /upload
 router.post("/", authenticate, upload.single("image"), async (req, res) => {
@@ -28,32 +35,26 @@ router.post("/", authenticate, upload.single("image"), async (req, res) => {
   const s3Key = `uploads/${req.file.filename}`;
 
   try {
-    // Upload to S3
-    await uploadToS3(localPath, s3Key);
+    await uploadToS3(localPath, s3Key, bucketName);
+    const s3Url = await getDownloadPresignedUrl(s3Key, bucketName);
 
-    // Get presigned URL
-    const s3Url = await getDownloadPresignedUrl(s3Key);
-
-    // Save metadata in DynamoDB
     const item = {
-      username: req.user,        // partition key
-      id: req.file.filename,     // sort key
+      username: req.user,
+      id: req.file.filename,
       owner: req.user,
       type: "uploaded",
       filter: null,
       s3Key,
       s3Url,
+      localUrl: null,
       processedAt: null,
       createdAt: new Date().toISOString(),
       uploadedAt: new Date().toISOString(),
     };
 
-    await putItem(item);
+    await putItem(item, tableName);
 
-    res.json({
-      message: "Upload successful (S3 + DynamoDB)",
-      item,
-    });
+    res.json({ message: "Upload successful", item });
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ error: "Upload failed", details: err.message });
